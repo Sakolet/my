@@ -1,11 +1,14 @@
 import { PEOPLE, type PersonId, type ScheduleEvent } from './types'
 
+export type Language = 'en' | 'zh'
+
 const dateFormatterCache = new Map<string, Intl.DateTimeFormat>()
 
-function formatter(timeZone: string, options: Intl.DateTimeFormatOptions) {
-  const key = `${timeZone}:${JSON.stringify(options)}`
+function formatter(timeZone: string, options: Intl.DateTimeFormatOptions, language: Language = 'zh') {
+  const locale = language === 'en' ? 'en-GB' : 'zh-CN'
+  const key = `${locale}:${timeZone}:${JSON.stringify(options)}`
   if (!dateFormatterCache.has(key)) {
-    dateFormatterCache.set(key, new Intl.DateTimeFormat('zh-CN', { timeZone, ...options }))
+    dateFormatterCache.set(key, new Intl.DateTimeFormat(locale, { timeZone, ...options }))
   }
   return dateFormatterCache.get(key)!
 }
@@ -20,12 +23,13 @@ export function formatClock(date: Date, timeZone: string) {
   return formatter(timeZone, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date)
 }
 
-export function formatCityDate(date: Date, timeZone: string) {
-  return formatter(timeZone, { month: 'short', day: 'numeric', weekday: 'short' }).format(date)
+export function formatCityDate(date: Date, timeZone: string, language: Language = 'zh') {
+  return formatter(timeZone, { month: 'short', day: 'numeric', weekday: 'short' }, language).format(date)
 }
 
 export function hourAt(date: Date, timeZone: string) {
-  return Number(formatter(timeZone, { hour: '2-digit', hourCycle: 'h23' }).format(date))
+  const parts = formatter(timeZone, { hour: '2-digit', hourCycle: 'h23' }).formatToParts(date)
+  return Number(parts.find((part) => part.type === 'hour')?.value ?? 0)
 }
 
 export function addDays(key: string, amount: number) {
@@ -102,13 +106,15 @@ export function minutesLabel(minutes: number) {
   return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`
 }
 
-export function dateTitle(dateKey: string) {
+export function dateTitle(dateKey: string, language: Language = 'zh') {
   const [year, month, day] = dateKey.split('-').map(Number)
-  return new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date(Date.UTC(year, month - 1, day, 12)))
+  return new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date(Date.UTC(year, month - 1, day, 12)))
 }
 
-export function formatDualRange(start: Date, end: Date) {
-  return `${formatClock(start, PEOPLE.sydney.timezone)}–${formatClock(end, PEOPLE.sydney.timezone)} 悉尼 · ${formatClock(start, PEOPLE.edinburgh.timezone)}–${formatClock(end, PEOPLE.edinburgh.timezone)} 爱丁堡`
+export function formatDualRange(start: Date, end: Date, language: Language = 'zh') {
+  const firstCity = language === 'en' ? PEOPLE.sydney.cityEn : PEOPLE.sydney.city
+  const secondCity = language === 'en' ? PEOPLE.edinburgh.cityEn : PEOPLE.edinburgh.city
+  return `${formatClock(start, PEOPLE.sydney.timezone)}–${formatClock(end, PEOPLE.sydney.timezone)} ${firstCity} · ${formatClock(start, PEOPLE.edinburgh.timezone)}–${formatClock(end, PEOPLE.edinburgh.timezone)} ${secondCity}`
 }
 
 export function commonFreeSlots(occurrences: EventOccurrence[], windowStart: Date, windowEnd: Date) {
@@ -155,11 +161,15 @@ export function commonFreeSlots(occurrences: EventOccurrence[], windowStart: Dat
   }, [])
 }
 
-export function timezoneDifferenceLabel(date: Date) {
+export function timezoneDifferenceLabel(date: Date, language: Language = 'zh') {
   const sydney = zonedParts(date, PEOPLE.sydney.timezone)
   const edinburgh = zonedParts(date, PEOPLE.edinburgh.timezone)
   const a = Date.UTC(sydney.year, sydney.month - 1, sydney.day, sydney.hour, sydney.minute)
   const b = Date.UTC(edinburgh.year, edinburgh.month - 1, edinburgh.day, edinburgh.hour, edinburgh.minute)
   const hours = Math.round((a - b) / 3_600_000)
-  return `悉尼比爱丁堡快 ${hours} 小时`
+  const firstCity = language === 'en' ? PEOPLE.sydney.cityEn : PEOPLE.sydney.city
+  const secondCity = language === 'en' ? PEOPLE.edinburgh.cityEn : PEOPLE.edinburgh.city
+  if (hours === 0) return language === 'en' ? `${firstCity} and ${secondCity} are at the same time` : `${firstCity}与${secondCity}时间相同`
+  if (language === 'en') return `${firstCity} is ${Math.abs(hours)} ${Math.abs(hours) === 1 ? 'hour' : 'hours'} ${hours > 0 ? 'ahead of' : 'behind'} ${secondCity}`
+  return `${firstCity}比${secondCity}${hours > 0 ? '快' : '慢'} ${Math.abs(hours)} 小时`
 }
