@@ -1,4 +1,4 @@
-const CACHE = 'between-us-v3'
+const CACHE = 'between-us-v4'
 const CORE = ['/', '/manifest.webmanifest', '/icons/icon-192.svg']
 
 self.addEventListener('install', (event) => {

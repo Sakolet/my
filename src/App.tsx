@@ -525,8 +525,11 @@ export default function App() {
   const [ready, setReady] = useState(false)
   const [authenticated, setAuthenticated] = useState(false)
   const [identity, setIdentity] = useState<PersonId>((localStorage.getItem(PROFILE_KEY) as PersonId) || 'sydney')
-  const [reference, setReference] = useState<PersonId>('sydney')
-  const [selectedDate, setSelectedDate] = useState(() => dateKeyAt(new Date(), PEOPLE.sydney.timezone))
+  const [reference, setReference] = useState<PersonId>(() => (localStorage.getItem(PROFILE_KEY) as PersonId) || 'sydney')
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const person = (localStorage.getItem(PROFILE_KEY) as PersonId) || 'sydney'
+    return dateKeyAt(new Date(), PEOPLE[person].timezone)
+  })
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [profiles, setProfiles] = useState<Profiles>(() => structuredClone(DEFAULT_PROFILES))
   const [messages, setMessages] = useState<Message[]>([])
@@ -534,6 +537,7 @@ export default function App() {
   const [modal, setModal] = useState<{ open: boolean; event: ScheduleEvent | null }>({ open: false, event: null })
   const [profileOpen, setProfileOpen] = useState(false)
   const [message, setMessage] = useState('')
+  const identityDateAligned = useRef(false)
   const names: Nicknames = { sydney: profiles.sydney.nickname, edinburgh: profiles.edinburgh.nickname }
 
   async function refresh() {
@@ -543,6 +547,11 @@ export default function App() {
       setEvents(nextEvents)
       setProfiles(nextProfiles)
       setMessages(nextMessages)
+      if (!identityDateAligned.current) {
+        setReference(identity)
+        setSelectedDate(dateKeyAt(new Date(), nextProfiles[identity].timezone))
+        identityDateAligned.current = true
+      }
     } catch { setMessage(tx(language, 'Sync paused. Waiting for the connection to return.', '同步暂时中断，正在等待网络恢复')) }
   }
 
@@ -569,6 +578,9 @@ export default function App() {
     applyProfiles(nextProfiles)
     setIdentity(person)
     setProfiles(nextProfiles)
+    setReference(person)
+    setSelectedDate(dateKeyAt(new Date(), profile.timezone))
+    identityDateAligned.current = true
     setAuthenticated(true)
   }} />
 
@@ -580,7 +592,7 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <a className="brand"><div className="brand-mark"><span /><span /></div><div><strong>{tx(language, 'Between Us', '我们之间')}</strong><small>BETWEEN US</small></div></a>
-        <div className="top-actions"><LanguageToggle language={language} onChange={setLanguage} /><span className={`sync-badge ${cloudEnabled ? 'cloud' : ''}`}><i />{cloudEnabled ? tx(language, 'Live sync', '实时同步') : tx(language, 'Local preview', '本地预览')}</span><button className="profile-button" onClick={() => setProfileOpen(true)}><span className={`avatar mini ${identity}`}>{cityLabel(identity, language).slice(0, 1)}</span><span>{names[identity]} · {cityLabel(identity, language)}</span></button><button className="logout-button" title={tx(language, 'Log out', '退出')} onClick={async () => { await logout(); setAuthenticated(false) }}>↗</button></div>
+        <div className="top-actions"><LanguageToggle language={language} onChange={setLanguage} /><span className={`sync-badge ${cloudEnabled ? 'cloud' : ''}`}><i />{cloudEnabled ? tx(language, 'Live sync', '实时同步') : tx(language, 'Local preview', '本地预览')}</span><button className="profile-button" onClick={() => setProfileOpen(true)}><span className={`avatar mini ${identity}`}>{cityLabel(identity, language).slice(0, 1)}</span><span>{names[identity]} · {cityLabel(identity, language)}</span></button><button className="logout-button" aria-label={tx(language, 'Log out', '退出')} title={tx(language, 'Log out', '退出')} onClick={async () => { identityDateAligned.current = false; await logout(); setAuthenticated(false) }}>↗</button></div>
       </header>
 
       <main className="dashboard">
