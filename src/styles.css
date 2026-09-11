@@ -251,6 +251,10 @@ textarea { resize: vertical; }
 .form-row { display: grid; gap: 11px; margin-top: 15px; }
 .form-row.three { grid-template-columns: 1.35fr 1fr 1fr; }
 .form-row.two { grid-template-columns: 1fr 1.25fr; }
+.native-date-control { display: block; width: 100%; min-width: 0; margin-top: 8px; overflow: hidden; border: 1px solid #dedbd4; border-radius: 12px; background: #fff; transition: border .2s; }
+.native-date-control:focus-within { border-color: #94a2ae; }
+.native-date-control input[type='date'], .native-date-control input[type='time'] { display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 43px; margin: 0; padding: 12px 13px; border: 0; border-radius: 0; box-sizing: border-box; background: transparent; }
+.native-date-control input:focus { outline: 0; }
 .field-help { display: block; margin-top: 5px; color: #92999c; font-size: 8px; font-weight: 400; }
 .check-label { display: flex !important; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid #dedbd4; border-radius: 12px; background: white; }
 .check-label input { width: 17px; height: 17px; margin: 0; accent-color: #617989; }
@@ -318,9 +322,10 @@ textarea { resize: vertical; }
   .event-modal { padding: 21px 17px; border-radius: 18px; }
   .form-row.three { grid-template-columns: 1fr; }
   .form-row.three label:first-child { grid-column: auto; }
-  .form-row.three label { width: 100%; min-width: 0; overflow: hidden; }
-  .form-row.three input[type='date'], .form-row.three input[type='time'] { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
-  .form-row.three input[type='date']::-webkit-date-and-time-value, .form-row.three input[type='time']::-webkit-date-and-time-value { min-width: 0; text-align: left; }
+  .form-row.three label { width: 100%; min-width: 0; }
+  .native-date-control { width: 100%; max-width: 100%; }
+  .native-date-control input[type='date'], .native-date-control input[type='time'] { width: 100%; min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; }
+  .native-date-control input[type='date']::-webkit-date-and-time-value, .native-date-control input[type='time']::-webkit-date-and-time-value { min-width: 0; margin: 0; text-align: left; }
   .form-row.two { grid-template-columns: 1fr; }
   .event-modal footer { flex-wrap: wrap; }
   .event-modal footer span { display: none; }
