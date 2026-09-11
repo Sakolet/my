@@ -558,6 +558,21 @@ export default function App() {
   useEffect(() => { hasSession().then((session) => { setAuthenticated(session); setReady(true) }) }, [])
   useEffect(() => { if (authenticated) refresh() }, [authenticated])
   useEffect(() => authenticated ? subscribeToEvents(refresh) : undefined, [authenticated])
+  useEffect(() => {
+    if (!authenticated || !cloudEnabled) return
+    const syncNow = () => refresh()
+    const syncWhenVisible = () => { if (document.visibilityState === 'visible') syncNow() }
+    const timer = window.setInterval(syncNow, 20_000)
+    window.addEventListener('focus', syncNow)
+    window.addEventListener('online', syncNow)
+    document.addEventListener('visibilitychange', syncWhenVisible)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', syncNow)
+      window.removeEventListener('online', syncNow)
+      document.removeEventListener('visibilitychange', syncWhenVisible)
+    }
+  }, [authenticated])
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 30_000); return () => clearInterval(timer) }, [])
   useEffect(() => { if (!message) return; const timer = window.setTimeout(() => setMessage(''), 3500); return () => clearTimeout(timer) }, [message])
   useEffect(() => {
@@ -596,6 +611,7 @@ export default function App() {
       </header>
 
       <main className="dashboard">
+        {!cloudEnabled && <div className="local-warning">{tx(language, 'Local preview: changes are saved only on this device. Add the Supabase environment variables to Vercel Production and redeploy.', '本地预览：内容只保存在当前设备。请在 Vercel Production 中配置 Supabase 环境变量并重新部署。')}</div>}
         <section className="welcome-row"><div><p className="eyebrow">GOOD TO SEE YOU</p><h1>{tx(language, "Let's see each other's day.", '今天，也看看彼此的时间。')}</h1></div><p className="difference-pill">↔ {timezoneDifferenceLabel(now, language)}</p></section>
         <section className="clocks"><ClockCard person="sydney" now={now} language={language} /><div className="connection"><span /><i>♥</i><span /></div><ClockCard person="edinburgh" now={now} language={language} /></section>
 
